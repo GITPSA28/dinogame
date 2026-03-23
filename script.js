@@ -1,30 +1,38 @@
-console.log('hello');
-let startBtn = document.getElementById('start');
+console.log("hello");
+let startBtn = document.getElementById("start");
+let resetBtn = document.getElementById("reset");
+let scoreText = document.getElementById("score");
 // :.·
 
-const WIDTH = 10;
-let dinoY = 3;
-let obstacles = [
+const WIDTH = 20;
+const OBSTACLES_INIT = [
     {
-        pos: 15,
+        pos: WIDTH + 5,
         enemy: [0, 0, 0, 1],
     },
     {
-        pos: 20,
+        pos: WIDTH + 8,
+        enemy: [0, 0, 1, 1],
+    },
+    {
+        pos: WIDTH + 15,
         enemy: [0, 0, 1, 1],
     },
 ];
-
-function spanEnemy(enemy = [0, 0, 0, 1]) {
-    for (let i = 0; i < myGrid.length; i++) {
-        myGrid[i].push(enemy[i]);
-    }
-}
+const DINO_Y_INIT = 3;
+let dinoY = DINO_Y_INIT;
+let gameInterval;
+let cooldown = false;
+let jumpOnCooldown = false;
+let score = 0;
+let gameState = 'rest';
+let obstacles = OBSTACLES_INIT;
+let grid;
 
 function convertGridToBraille(grid) {
     const rows = 4;
-    const cols = grid[0].length;
-    let result = '';
+    const cols = WIDTH;
+    let result = "";
 
     for (let c = 0; c < cols; c += 2) {
         let offset = 0;
@@ -42,13 +50,60 @@ function convertGridToBraille(grid) {
     }
     return result;
 }
+function draw(grid) {
+    document.title = convertGridToBraille(grid);
+}
+function updateScore() {
+    scoreText.innerText = score;
+}
 function gameLoop() {
-    const grid = new Array({length: 4}, () => Array(WIDTH).fill(0));
+    grid = Array.from({ length: 4 }, () => Array(WIDTH).fill(0));
+    let colision = false;
+    grid[dinoY][2] = 1;
 
-    grid[2][dinoY] = 1;
-    obstacles.map((obs) => {
-        return {...obs, pos: obs.pos - 1};
+    obstacles = obstacles.map((obs) => {
+        return { ...obs, pos: obs.pos - 1 };
     });
+    if (obstacles[0].pos < 0) {
+        obstacles.shift();
+        obstacles.push({
+            pos: WIDTH + Math.round(Math.random() * 10),
+            enemy: [0, 0, 0, 1],
+        });
+        score += 1;
+        updateScore();
+    }
+    obstacles.forEach(({ pos: i, enemy }) => {
+        for (let j = 0; j < enemy.length; j++) {
+            if (i == 2 && enemy[j] && dinoY === j) colision = true;
+            grid[j][i] = enemy[j];
+        }
+    });
+    if (colision) {
+        // console.log('colide')
+        gameState = 'over';
+        clearInterval(gameInterval);
+    }
+    draw(grid);
+    //   console.log(grid);
+}
+function jump() {
+    if (cooldown) {
+        jumpOnCooldown = true;
+        return;
+    }
+    dinoY = 0;
+    jumpOnCooldown = false;
+    setTimeout(function () {
+        dinoY = 3;
+        cooldown = true;
+        setTimeout(function () {
+            cooldown = false;
+            if (jumpOnCooldown) {
+                jump();
+            }
+        }, 400);
+    }, 700);
 }
 // const myGrid = [
 //     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
@@ -57,10 +112,32 @@ function gameLoop() {
 //     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
 // ];
 
-console.log(convertGridToBraille(myGrid));
 
-startBtn.addEventListener('click', function (e) {
-    spanEnemy();
-    document.title = convertGridToBraille(myGrid);
-    convertGridToBraille(myGrid);
+startBtn.addEventListener("click", function (e) {
+    if (gameState !== 'rest') return;
+    start();
 });
+resetBtn.addEventListener("click", function (e) {
+    if (gameState !== 'over') return;
+    dinoY = DINO_Y_INIT;
+    score = 0;
+    updateScore();
+    gameState = 'rest';
+    obstacles = OBSTACLES_INIT;
+    draw(grid);
+
+})
+document.addEventListener('keydown', function (e) {
+    if (e.key === " " && !e.repeat && dinoY === 3) {
+        jump();
+    }
+})
+
+function start() {
+    gameState = 'running';
+    if (gameInterval) clearInterval(gameInterval);
+    gameInterval = setInterval(function () {
+        gameLoop();
+    }, 150);
+    startBtn.blur();
+}
