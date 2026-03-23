@@ -1,0 +1,9 @@
+:root {
+    padding: 0;
+    margin: 0;
+}
+button {
+    padding-inline: 20px;
+    padding-block: 10px;
+    font-size: large;
+}
