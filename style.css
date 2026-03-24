@@ -7,11 +7,14 @@ button {
     padding-block: 10px;
     font-size: large;
 }
-main{
+#reset {
+    visibility: hidden;
+}
+main {
     width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap:10px;
+    gap: 10px;
     font-size: x-large;
 }
